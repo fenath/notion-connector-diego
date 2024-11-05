@@ -2,4 +2,7 @@
 # venv
 /notion-connector/
 
+__pycache__/
+*.txt
+
 credentials.json

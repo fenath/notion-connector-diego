@@ -13,6 +13,8 @@ import requests
 import pandas as pd
 import json
 import sys
+import os
+from datetime import datetime
 
 # Configurar o acesso ao Notion
 NOTION_URL = "https://api.notion.com/v1/pages/"
@@ -32,6 +34,10 @@ def parse_brl_to_float(value):
     value = value.replace("R$", "").strip()
     value = value.replace(".", "").replace(",", ".")
     return float(value)
+
+def parse_int(value):
+    value = value.replace(".", "").replace(",", "").strip()
+    return int(value)
 
 def parse_percent(value):
     value = str(handle_div_zero(value))
@@ -57,7 +63,7 @@ def open_sheet(sheet_name, sheet_page='PAINEL OUTUBRO/2024'):
     return df
 
 def print_sheet_data(sheet_name, sheet_page='PAINEL OUTUBRO/2024'):
-    open_sheet(sheet_name, sheet_page)
+    df = open_sheet(sheet_name, sheet_page)
     print('nome dashboard: ' + df[1][1])
     print("# leads" + df[3][8])
     print("invest. ads" + df[1][8])
@@ -74,13 +80,13 @@ def print_sheet_data(sheet_name, sheet_page='PAINEL OUTUBRO/2024'):
 def df_to_metricas(df):
     metricas = {
         "nome_dashboard": df[1][1],
-        "Nº DE LEADS 👥": int(df[3][8]),
+        "Nº DE LEADS 👥": parse_int(df[3][8]),
         "INVESTIMENTO EM ADS 💸": parse_brl_to_float(df[1][8]),
-        "N° DE AGENDAMENTOS": int(df[3][11]),
+        "N° DE AGENDAMENTOS": parse_int(df[3][11]),
         "TAXA DE CONVERSÃO P/ AGENDAMENTO": parse_percent(df[1][11]),
-        "N° DE REALIZADO":  int(df[3][14]),
+        "N° DE REALIZADO":  parse_int(df[3][14]),
         "TAXA DE CONVERSÃO P/ COMPARECIMENTO":  parse_percent(df[1][14]),
-        "N° DE VENDAS": int(df[3][17]),
+        "N° DE VENDAS": parse_int(df[3][17]),
         "TAXA DE CONVERSÃO P/ VENDA":  parse_percent(df[1][17]),
         "FATURAMENTO": parse_brl_to_float(df[3][20]),
         "TKM": parse_brl_to_float(df[1][20]),
@@ -126,19 +132,46 @@ def notion_create_post_payload(cliente_nome, metricas):
 
     payload['properties'] = metricas
     payload['properties']['title'] = [create_nome(cliente_nome)]
-    del(payload['properties']['nome_dashboard'])
+    # del(payload['properties']['nome_dashboard'])
     return payload
 
 def notion_create_patch_payload(metricas):
     patch_payload = { 'properties': metricas }
-    del(patch_payload['properties']['nome_dashboard'])
+    # del(patch_payload['properties']['nome_dashboard'])
     return patch_payload
 
 def extract_client_name(nome_dashboard):
     return nome_dashboard[len("DASHBOARD -"):]
 
+def get_argv_value(*arg_names, default=None):
+    for arg_name in arg_names:
+        if arg_name in sys.argv:
+            return sys.argv[sys.argv.index(arg_name)+1]
+    return default
+
+def id_to_url(id):
+    return f'https://docs.google.com/spreadsheets/d/{id}/edit?usp=sharing'
+
+MESES = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO']
+
 def main():
     global gc
+
+    mes = int(get_argv_value('--mes', '-m', default=datetime.today().month))
+    ano = get_argv_value('--ano', '-a', default=str(datetime.today().year))
+    file_id = get_argv_value('--file-id', '-f', default='1FhZ5ktfehaN8V9FtpbLrC8Jn-pst4514hnZ76YiY6hk')
+    prevent_post = '-n' in sys.argv or '--no-post' in sys.argv
+
+    mes = MESES[mes-1].upper()
+    print(f"Atualizando: Mes: {mes}, Ano: {ano}, File ID: {file_id}")
+
+    if len(ano) != 4:
+        print("Ano inválido")
+        sys.exit(1)
+
+    if mes not in MESES:
+        print("Mês inválido")
+        sys.exit(1)
 
     with open('credentials.json', 'r') as f:
         credentials = json.load(f)
@@ -146,14 +179,24 @@ def main():
     # Configurar credenciais do Google Sheets
     gc = gspread.service_account_from_dict(credentials)
 
-    metricas = df_to_metricas(open_sheet('https://docs.google.com/spreadsheets/d/1WiR0sUpxMUAbD5QiHf12BOza5rftWeqMlZIpRUys0zk/edit?usp=sharing', 'PAINEL OUTUBRO/2024'))
+    is_print = '-p' in sys.argv or '--print' in sys.argv
+    if is_print:
+        print_sheet_data(id_to_url(file_id), f'PAINEL {mes}/{ano}')
+    metricas = df_to_metricas(open_sheet(id_to_url(file_id), f'PAINEL {mes}/{ano}'))
 
     cliente_nome = extract_client_name(metricas['nome_dashboard'])
     del(metricas['nome_dashboard'])
 
     cliente_id = notion_client_id(cliente_nome)
 
-    return cliente_id, cliente_nome, json.dumps(metricas)
+    if prevent_post:
+        print('Aborting post by --no-post flag')
+        print(json.dumps({
+            'cliente_id': cliente_id,
+            'cliente_nome': cliente_nome,
+            'metricas': metricas
+        }))
+        return
 
     if cliente_id:
         payload = notion_create_patch_payload(metricas)
