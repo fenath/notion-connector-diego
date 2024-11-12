@@ -62,10 +62,10 @@ class FileWatcher:
             raise TypeError("modified_time must be a datetime object,"+
                             f" received {str(modified_time)} as {type(modified_time)}")
 
-        if modified_time.date() != datetime.today().date():
+        if modified_time.date() != datetime.today().date() and not is_first_time():
             return
 
-        notified_at = modified_time if is_first_time() else datetime.now()
+        notified_at = None# modified_time if is_first_time() else datetime.now()
 
         if not self._files.get(file, None):
             self._log.log('addeded: ', file_info['name'], ' - ', datetime_to_local(modified_time))
@@ -88,6 +88,19 @@ class FileWatcher:
             self._log.log(f"Modificado em: {datetime_to_local(modified_time)}")
             self._log.log(f"Notificado em: {datetime_to_local(notified_at)}")
             self._log.log(f'Delta - tempo: {(datetime.now() - modified_time).seconds} segundos')
+            
+            if (notified_at is None) and is_first_time():
+                self._files[file]['notified_at'] = datetime.now()
+                self._log.log('Notificando...')
+                self.notify(self._files[file])
+                continue
+
+            if (notified_at is None) and (datetime.now() - modified_time).seconds > self._idle_time_mins * 60:
+                self._files[file]['notified_at'] = datetime.now()
+                self._log.log('Notificando...')
+                self.notify(self._files[file])
+                continue
+
             if (modified_time > notified_at) and (datetime.now() - modified_time).seconds > self._idle_time_mins * 60:
                 self._files[file]['notified_at'] = datetime.now()
                 self._log.log('Notificando...')
@@ -164,12 +177,14 @@ def watch_specific_files(watcher, listeners, interval=10):
             modified_time = datetime_to_local(modified_time)
             modified_time = modified_time.replace(tzinfo=None)
             watcher.add_update(id, modified_time, file_info)
+            watcher.check_idles()
         
-        watcher.check_idles()
         time.sleep(interval)
         print('', end='\r', flush=True)
 
 def datetime_to_local(dt):
+    if dt is None:
+        return None
     utc = dt.replace(tzinfo=from_zone)
     return utc.astimezone(to_zone)
 
