@@ -219,6 +219,7 @@ class Monolit:
         kwargs['file_id'] = file["file_info"]["id"]
         kwargs['prevent_post'] = False
         kwargs['is_print'] = False
+        main(**kwargs)
 
 
 if __name__ == "__main__":
