@@ -43,9 +43,12 @@ def parse_int(value):
         return 0
 
 def parse_percent(value):
-    value = str(handle_div_zero(value))
+    # value = str(handle_div_zero(value))
     value = value.replace('%', '').strip()
-    value = float(value) / 100
+    try:
+        return float(value) / 100
+    except ValueError:
+        return 0
 
 def handle_div_zero(value):
     if value == "#DIV/0!":
