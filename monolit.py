@@ -37,7 +37,10 @@ def parse_brl_to_float(value):
 
 def parse_int(value):
     value = value.replace(".", "").replace(",", "").strip()
-    return int(value)
+    try:
+        return int(value)
+    except ValueError:
+        return 0
 
 def parse_percent(value):
     value = str(handle_div_zero(value))
@@ -65,17 +68,17 @@ def open_sheet(sheet_name, sheet_page='PAINEL OUTUBRO/2024'):
 def print_sheet_data(sheet_name, sheet_page='PAINEL OUTUBRO/2024'):
     df = open_sheet(sheet_name, sheet_page)
     print('nome dashboard: ' + df[1][1])
-    print("# leads" + df[3][8])
-    print("invest. ads" + df[1][8])
-    print("taxa conversao agendamento" + df[1][11])
-    print("# agendamentos" + df[3][11])
-    print("taxa conversao comparecimento" + df[1][14])
-    print("# realizado" + df[3][14])
-    print("TAXA DE CONVERSÃO P/\nVENDA " + df[1][17])
-    print("# vendas" + df[3][17])
-    print("tkm" + df[1][20])
-    print("faturamento" + df[3][20])
-    print("roas" + df[5][20])
+    print("# leads:" + df[3][8])
+    print("invest. ads: " + df[1][8])
+    print("taxa conversao agendamento: " + df[1][11])
+    print("# agendamentos: " + df[3][11])
+    print("taxa conversao comparecimento: " + df[1][14])
+    print("# realizado: " + df[3][14])
+    print("TAXA DE CONVERSÃO P/\nVENDA : " + df[1][17])
+    print("# vendas: " + df[3][17])
+    print("tkm: " + df[1][20])
+    print("faturamento: " + df[3][20])
+    print("roas: " + df[5][20])
 
 def df_to_metricas(df):
     metricas = {
