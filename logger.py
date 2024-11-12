@@ -1,10 +1,14 @@
+import datetime as dt
 
 class Logger:
     def __init__(self):
         self._log = []
 
     def log(self, *args):
-        self._log.append(' '.join([str(arg) for arg in args]))
+        msg = ' '.join([str(arg) for arg in args])
+        msg_date = dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S') 
+        msg = '[LOG] ' + f'({msg_date})' + ' ' + msg
+        self._log.append(msg)
 
     def get_log(self):
         return self._log
