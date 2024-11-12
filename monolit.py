@@ -74,7 +74,7 @@ def print_sheet_data(sheet_name, sheet_page='PAINEL OUTUBRO/2024'):
     print("# agendamentos: " + df[3][11])
     print("taxa conversao comparecimento: " + df[1][14])
     print("# realizado: " + df[3][14])
-    print("TAXA DE CONVERSÃO P/\nVENDA : " + df[1][17])
+    print("TAXA DE CONVERSÃO P/ VENDA : " + df[1][17])
     print("# vendas: " + df[3][17])
     print("tkm: " + df[1][20])
     print("faturamento: " + df[3][20])
@@ -198,7 +198,7 @@ def main(**kwargs):
             'cliente_id': cliente_id,
             'cliente_nome': cliente_nome,
             'metricas': metricas
-        }))
+        }, indent=2))
         return
 
     if cliente_id:
