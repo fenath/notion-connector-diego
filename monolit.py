@@ -15,11 +15,14 @@ import json
 import sys
 import os
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Configurar o acesso ao Notion
 NOTION_URL = "https://api.notion.com/v1/pages/"
-NOTION_TOKEN = "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"
-DATABASE_ID = "130d7315decb80a6be6ed093c926746e" #"e508acfe56004a48af0055524a3ca850"
+NOTION_TOKEN = os.getenv("NOTION_TOKEN")
+DATABASE_ID = os.getenv("NOTION_DATABASE_ID")
 
 HEADERS = {
     "Authorization": f"Bearer {NOTION_TOKEN}",
