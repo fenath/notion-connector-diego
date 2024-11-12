@@ -118,7 +118,8 @@ def notion_client_id(client_name) -> str:
 
     # print('verificando existencia do cliente: Status: ' + str(response.status_code))
     if response.status_code != 200:
-        raise "Nao foi possível contactar ao notion, erro: " + response.text
+        raise Exception(f"Erro ao verificar existência do cliente: {response.status_code} - {response.text}")
+        #"Nao foi possível contactar ao notion, erro: " + response.text
 
     res = response.json()
     if len(res['results']) > 0:
