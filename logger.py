@@ -20,5 +20,5 @@ class FileLogger:
 
     def log(self, *args):
         self._log.log(*args)
-        with open(self._filename, 'a') as f:
+        with open(self._filename, 'a', encoding='utf-8') as f:
             f.write(self._log.get_last_log()+'\n')

@@ -5,6 +5,7 @@ from google.oauth2.service_account import Credentials
 from dateutil import tz
 from datetime import datetime
 from logger import FileLogger
+from monolit import Monolit
 import sys
 import os
 
@@ -30,7 +31,7 @@ drive_service = build('drive', 'v3', credentials=creds)
 # Lista de IDs das planilhas específicas para monitoramento
 spreadsheet_urls = []
 
-with open('spreadsheet_urls.txt', 'r') as f:
+with open('spreadsheet_urls.txt', 'r', encoding='utf-8') as f:
     spreadsheet_urls = f.read().splitlines()
     spreadsheet_urls = filter(lambda x: x.startswith('https://'), spreadsheet_urls)
 
@@ -111,14 +112,6 @@ class Listener:
             f'{datetime.strftime(file["modified_time"], "%d/%m %H:%M")}'+
             f' ({last_modified_in} segundos atrás)')
 
-class RunMonolitListener:
-    def __init__(self):
-        self._monolit_path = 'monolit.py'
-
-    def update(self, file):
-        os.system(f'python {self._monolit_path} --file-id {file["file_info"]["id"]}'+
-                  f' --mes {datetime.today().month} --ano {datetime.today().year}')
-
 class CmdListener:
     def __init__(self, cmd):
         self._cmd = cmd
@@ -154,9 +147,6 @@ def get_changes(page_token):
 def watch_specific_files(watcher, listeners, interval=10):
 
     global drive_service
-
-    # listener = Listener()
-    # watcher = FileWatcher({}, idle_time_mins=1/6)
 
     for listener in listeners:
         watcher.attach(listener)
@@ -217,7 +207,9 @@ def main():
         listeners.append(Listener())
 
     if '--connector' in sys.argv or '-c' in sys.argv:
-        listeners.append(RunMonolitListener())
+        print('Attaching connector...')
+        connector = Monolit()
+        listeners.append(connector)
 
     if notify_cmd:
         listeners.append(CmdListener(notify_cmd))

@@ -154,13 +154,13 @@ def id_to_url(id):
 
 MESES = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO']
 
-def main():
+def main(**kwargs):
     global gc
 
-    mes = int(get_argv_value('--mes', '-m', default=datetime.today().month))
-    ano = get_argv_value('--ano', '-a', default=str(datetime.today().year))
-    file_id = get_argv_value('--file-id', '-f', default='1FhZ5ktfehaN8V9FtpbLrC8Jn-pst4514hnZ76YiY6hk')
-    prevent_post = '-n' in sys.argv or '--no-post' in sys.argv
+    mes = kwargs.get('mes')
+    ano = kwargs.get('ano')
+    file_id = kwargs.get('file_id')
+    prevent_post = kwargs.get('prevent_post')
 
     mes = MESES[mes-1].upper()
     print(f"Atualizando: Mes: {mes}, Ano: {ano}, File ID: {file_id}")
@@ -173,13 +173,13 @@ def main():
         print("Mês inválido")
         sys.exit(1)
 
-    with open('credentials.json', 'r') as f:
+    with open('credentials.json', 'r', encoding='utf-8') as f:
         credentials = json.load(f)
 
     # Configurar credenciais do Google Sheets
     gc = gspread.service_account_from_dict(credentials)
 
-    is_print = '-p' in sys.argv or '--print' in sys.argv
+    is_print = kwargs.get('is_print', False)
     if is_print:
         print_sheet_data(id_to_url(file_id), f'PAINEL {mes}/{ano}')
     metricas = df_to_metricas(open_sheet(id_to_url(file_id), f'PAINEL {mes}/{ano}'))
@@ -211,6 +211,22 @@ def main():
         response_text = json.loads(response.text)
         print(f"Erro ao enviar dados para o Notion: {response.status_code} - {response_text}")
 
+class Monolit:
+    def update(self, file):
+        kwargs = {}
+        kwargs['mes'] = datetime.today().month
+        kwargs['ano'] = str(datetime.today().year)
+        kwargs['file_id'] = file["file_info"]["id"]
+        kwargs['prevent_post'] = False
+        kwargs['is_print'] = False
+
 
 if __name__ == "__main__":
-    main()
+    kwargs = {}
+
+    kwargs['mes'] = int(get_argv_value('--mes', '-m', default=datetime.today().month))
+    kwargs['ano'] = get_argv_value('--ano', '-a', default=str(datetime.today().year))
+    kwargs['file_id'] = get_argv_value('--file-id', '-f', default='1FhZ5ktfehaN8V9FtpbLrC8Jn-pst4514hnZ76YiY6hk')
+    kwargs['prevent_post'] = '-n' in sys.argv or '--no-post' in sys.argv
+    kwargs['is_print'] = '-p' in sys.argv or '--print' in sys.argv
+    main(**kwargs)
